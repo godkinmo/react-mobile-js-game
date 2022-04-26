@@ -4,14 +4,13 @@ import { useDrag } from '@use-gesture/react'
 
 function App() {
   const [timer, setTimer] = useState(0)
-  const heroRef = useRef(null)
-  const hero = useState({
-    width: 10,
-    height: 10,
-    x: 30,
+  const [hero, setHero] = useState({
+    width: 40,
+    height: 60,
+    x: 375 / 2 - 20,
     y: 150,
     speedX: 0,
-    speedY: 0,
+    speedY: 3,
   })
 
   const [floors, setFloors] = useState([])
@@ -55,36 +54,70 @@ function App() {
     })
   })
 
+  // looping...
   useEffect(() => {
-    console.log(heroRef.current)
-  }, [])
+    const timeInterval = setInterval(() => {
+      setTimer(timer + 1)
 
-  // setInterval(useCallback(() => {
-  //   setTimer(timer + 1)
+      const newFloors = [
+        ...floors.map((floor) => ({
+          ...floor,
+          y: floor.y + floor.speedY,
+        })),
 
-  //   console.log(timer)
-  //   const randomFloor = {
-  //     width: 10,
-  //     height: 10,
-  //     x: Math.floor(Math.random() * 375),
-  //     y: 667,
-  //     speedX: 0,
-  //     speedY: -3,
-  //   }
+        // each 800ms push a random floors
+        (timer % (60 * (800 / 1000)) === 0) && {
+          id: timer,
+          width: 100,
+          height: 10,
+          x: Math.floor(Math.random() * 375),
+          y: 667,
+          speedX: 0,
+          speedY: -3,
+        },
+      ].filter(Boolean).filter(floor => floor.y > 0)
 
-  //   const isSecond = Math.floor(timer)
+      setFloors(newFloors)
 
-  //   // setFloors([...floors, randomFloor])
-  // }, [timer]), 100)
+      if (moving) {
+        if (movingDirection.left) {
+          hero.speedX = -5
+        }
+        if (movingDirection.right) {
+          hero.speedX = 5
+        }
+        hero.x += hero.speedX
+      }
 
-  // useEffect(() => {
-  //   // console.log('moving', moving)
-  //   if (movingDirection.left) {
-  //   }
-  // }, [movingDirection])
+      hero.speedY = 3
+      newFloors.forEach(floor => {
+        if (checkCollision(hero, floor)) {
+          console.log('hit')
+          hero.speedY = floor.speedY
+        }
+      })
+
+      hero.y += hero.speedY
+      setHero(hero)
+    }, 1000 / 60);
+
+    return () => clearInterval(timeInterval)
+  }, [timer])
+
+  function checkCollision(a, b) {
+    if (a.x < b.x + b.width &&
+      a.x + a.width > b.x &&
+      a.y < b.y + b.height &&
+      a.height + a.y > b.y) {
+      // collision detected!
+      console.log('hit')
+      return true
+    }
+    return false
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center overflow-hidden" style={{ touchAction: 'none' }}>
       <div
         className="relative flex items-center justify-center border"
         style={{
@@ -110,13 +143,30 @@ function App() {
         </div>
 
         <div className="absolute w-full h-2/3 top-0 left-0">
+          {/* {JSON.stringify(hero)} */}
+          {/* {JSON.stringify(timer)} */}
           {/* {JSON.stringify(floors)} */}
-          <div ref={heroRef} className="absolute bg-red-500" style={{
+          <div className="absolute bg-red-500" style={{
             top: hero.y,
             left: hero.x,
             width: hero.width,
             height: hero.height,
-          }}>{hero.width}</div>
+          }}></div>
+
+          {
+            floors.map(floor => (
+              <div
+                key={floor.id}
+                className="absolute bg-black"
+                style={{
+                  top: floor.y,
+                  left: floor.x,
+                  width: floor.width,
+                  height: floor.height,
+                }}
+              ></div>
+            ))
+          }
         </div>
 
         <div className="absolute w-full h-1/3 bottom-0 left-0 border flex items-center justify-center">
